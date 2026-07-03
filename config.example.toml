@@ -4,3 +4,46 @@
 host = "0.0.0.0"
 port = 2333
 password = "youshallnotpass"
+
+[audio]
+buffer_ms = 1000
+opus_bitrate = 128000
+
+[sources]
+youtube = true
+radio = true
+plugins_dir = "./plugins"
+
+[limits]
+max_players = 100
+max_queue = 500
+
+# --- Service credentials (all optional; empty fields disable the source) ---
+
+# Spotify: register an app at https://developer.spotify.com/dashboard
+# Both fields required for Spotify URL resolution.
+[spotify]
+client_id = ""
+client_secret = ""
+
+# Apple Music: needs a JWT developer token.
+# See: https://developer.apple.com/documentation/applemusicapi
+[apple_music]
+developer_token = ""
+user_token = ""
+
+# Yandex Music: access_token from https://oauth.yandex.ru
+# Without a token, only low-quality previews work.
+[yandex_music]
+access_token = ""
+user_id = ""
+
+# Deezer: ARL token for full-track streaming (Premium accounts).
+# Without a token, only 30-second previews work.
+[deezer]
+arl_token = ""
+
+# Google Cloud TTS: API key from Google Cloud Console.
+# Used for text-to-speech synthesis via the TTS REST endpoint.
+[tts.google]
+api_key = ""

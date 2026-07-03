@@ -30,6 +30,18 @@ impl SponsorBlockClient {
         }
     }
 
+    /// Borrow the configured base URL (for tests / introspection).
+    #[must_use]
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    /// URL-encode a string (exposed for tests).
+    #[must_use]
+    pub fn urlencoding_encode(s: &str) -> String {
+        url_encode(s)
+    }
+
     /// Fetch all sponsor segments for `video_id`.
     ///
     /// # Errors
@@ -53,7 +65,7 @@ impl SponsorBlockClient {
             "{}/api/skipSegments?videoID={}&categories={}",
             self.base_url,
             video_id,
-            urlencoding::encode(&cats_json)
+            url_encode(&cats_json)
         );
         let resp = self
             .http
@@ -123,46 +135,15 @@ impl From<serde_json::Error> for SponsorBlockError {
         Self::Parse(e.to_string())
     }
 }
-
-mod urlencoding {
-    /// Minimal URL-encoder (avoids pulling in another crate).
-    pub fn encode(s: &str) -> String {
-        let mut out = String::with_capacity(s.len());
-        for b in s.bytes() {
-            match b {
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                    out.push(b as char);
-                }
-                _ => out.push_str(&format!("%{b:02X}")),
+fn url_encode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for b in s.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char);
             }
+            _ => out.push_str(&format!("%{b:02X}")),
         }
-        out
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn client_constructs_with_default_base() {
-        let c = SponsorBlockClient::new();
-        assert!(c.base_url.contains("sponsor.ajay.app"));
-    }
-
-    #[test]
-    fn client_accepts_custom_base() {
-        let c = SponsorBlockClient::with_base_url("https://custom.example".into());
-        assert_eq!(c.base_url, "https://custom.example");
-    }
-
-    #[test]
-    fn urlencoding_encodes_brackets() {
-        assert_eq!(urlencoding::encode("[\"sponsor\"]"), "%5B%22sponsor%22%5D");
-    }
-
-    #[test]
-    fn urlencoding_preserves_alphanumerics() {
-        assert_eq!(urlencoding::encode("abc123"), "abc123");
-    }
+    out
 }

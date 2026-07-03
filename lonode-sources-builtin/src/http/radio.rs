@@ -53,6 +53,8 @@ impl AudioSource for RadioSource {
             "vimeo.com",
             "music.apple.com",
             "deezer.com",
+            "music.yandex.com",
+            "music.yandex.ru",
         ] {
             if lower.contains(domain) {
                 return false;

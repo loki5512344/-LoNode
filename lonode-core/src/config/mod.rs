@@ -4,11 +4,14 @@
 //! [`Config::default`](crate::config::types::Config::default) when the file
 //! is missing.
 
-pub mod extra;
+pub mod sources;
 pub mod types;
 
-pub use extra::{LimitsConfig, SourcesConfig};
-pub use types::{AudioConfig, Config, ServerConfig};
+pub use sources::{
+    AppleMusicConfig, DeezerConfig, SourcesConfig, SpotifyConfig, TtsGoogleConfig,
+    YandexMusicConfig,
+};
+pub use types::{AudioConfig, Config, LimitsConfig, ServerConfig, TtsSection};
 
 use crate::Result;
 
@@ -72,6 +75,32 @@ password = "secret"
         assert_eq!(cfg.server.host, "127.0.0.1");
         assert_eq!(cfg.server.port, 8080);
         assert_eq!(cfg.server.password, "secret");
+    }
+
+    #[test]
+    fn parses_full_config_with_credentials() {
+        let toml = r#"
+[server]
+host = "0.0.0.0"
+port = 2333
+password = "pass"
+
+[spotify]
+client_id = "abc"
+client_secret = "def"
+
+[yandex_music]
+access_token = "ya.123"
+user_id = "42"
+
+[apple_music]
+developer_token = "jwt"
+"#;
+        let cfg = parse(toml).unwrap();
+        assert!(cfg.spotify.enabled());
+        assert!(cfg.yandex_music.enabled());
+        assert_eq!(cfg.yandex_music.user_id, "42");
+        assert!(cfg.apple_music.enabled());
     }
 
     #[test]

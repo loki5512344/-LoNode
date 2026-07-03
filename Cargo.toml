@@ -15,6 +15,7 @@ members = [
     "lonode-plugin-sponsorblock",
     "lonode-source-apple-music",
     "lonode-source-deezer",
+    "lonode-source-yandex-music",
     "lonode-plugin-tts-google",
 ]
 

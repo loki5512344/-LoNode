@@ -1,33 +1,41 @@
 //! Configuration types for LoNode.
 
-use super::extra::{LimitsConfig, SourcesConfig};
+use super::sources::{
+    AppleMusicConfig, DeezerConfig, SourcesConfig, SpotifyConfig, TtsGoogleConfig,
+    YandexMusicConfig,
+};
 use serde::{Deserialize, Serialize};
 
 /// Top-level configuration loaded from `config.toml`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
-    /// HTTP/WS server settings.
     #[serde(default)]
     pub server: ServerConfig,
-    /// Audio pipeline settings.
     #[serde(default)]
     pub audio: AudioConfig,
-    /// Source/plugin settings.
     #[serde(default)]
     pub sources: SourcesConfig,
-    /// Runtime limits.
     #[serde(default)]
     pub limits: LimitsConfig,
+    /// Service credentials. Each section is optional; empty fields disable
+    /// the corresponding source.
+    #[serde(default)]
+    pub spotify: SpotifyConfig,
+    #[serde(default)]
+    pub apple_music: AppleMusicConfig,
+    #[serde(default)]
+    pub yandex_music: YandexMusicConfig,
+    #[serde(default)]
+    pub deezer: DeezerConfig,
+    #[serde(default)]
+    pub tts: TtsSection,
 }
 
 /// HTTP/WebSocket server settings.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ServerConfig {
-    /// Bind host.
     pub host: String,
-    /// Bind port (Lavalink default 2333).
     pub port: u16,
-    /// Password used for `Authorization` header.
     pub password: String,
 }
 
@@ -44,10 +52,8 @@ impl Default for ServerConfig {
 /// Audio pipeline tuning.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AudioConfig {
-    /// Ring-buffer length in milliseconds (~1 s ahead).
     #[serde(default = "default_buffer_ms")]
     pub buffer_ms: u32,
-    /// Opus bitrate in bits per second.
     #[serde(default = "default_opus_bitrate")]
     pub opus_bitrate: u32,
 }
@@ -64,6 +70,40 @@ impl Default for AudioConfig {
         Self {
             buffer_ms: default_buffer_ms(),
             opus_bitrate: default_opus_bitrate(),
+        }
+    }
+}
+
+/// TTS section (currently only Google Cloud TTS).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TtsSection {
+    #[serde(default)]
+    pub google: TtsGoogleConfig,
+}
+
+/// Runtime caps to protect the node from runaway queues.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LimitsConfig {
+    /// Maximum concurrent guild players.
+    #[serde(default = "default_max_players")]
+    pub max_players: u32,
+    /// Maximum tracks queued per guild.
+    #[serde(default = "default_max_queue")]
+    pub max_queue: u32,
+}
+
+fn default_max_players() -> u32 {
+    100
+}
+fn default_max_queue() -> u32 {
+    500
+}
+
+impl Default for LimitsConfig {
+    fn default() -> Self {
+        Self {
+            max_players: default_max_players(),
+            max_queue: default_max_queue(),
         }
     }
 }

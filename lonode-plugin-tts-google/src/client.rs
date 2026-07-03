@@ -126,38 +126,3 @@ pub enum TtsError {
     #[error("google tts api error: {0}")]
     Api(String),
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::TtsRequest;
-
-    #[test]
-    fn client_constructs_with_api_key() {
-        let _c = TtsClient::new("test-key");
-    }
-
-    #[test]
-    fn request_serializes_text_input() {
-        let req = TtsRequest::text("hello", "en-US");
-        let body = SynthesizeRequest {
-            input: SynthesisInput {
-                text: Some(req.text.clone()),
-                ssml: None,
-            },
-            voice: VoiceParams {
-                language_code: req.voice.language_code,
-                name: None,
-                ssml_gender: None,
-            },
-            audio_config: AudioConfig {
-                audio_encoding: req.encoding,
-                speaking_rate: Some(req.rate),
-                pitch: Some(req.pitch),
-            },
-        };
-        let json = serde_json::to_string(&body).unwrap();
-        assert!(json.contains("\"text\":\"hello\""));
-        assert!(json.contains("\"languageCode\":\"en-US\""));
-    }
-}

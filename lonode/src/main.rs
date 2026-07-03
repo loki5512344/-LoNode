@@ -1,29 +1,22 @@
 //! LoNode binary entry point.
 //!
 //! - Loads `config.toml` (or falls back to defaults).
-//! - Builds a `PluginRegistry`: registers built-in sources (radio, youtube,
-//!   soundcloud, bandcamp, twitch, vimeo) + Spotify resolver, then loads
-//!   any `.so` files from `config.sources.plugins_dir`.
+//! - Builds a `PluginRegistry` from config (see [`sources::build_sources`]).
 //! - Starts the axum HTTP/WS API server (Lavalink v4 compatible).
 //! - Optionally also starts one voice session from env vars (dev/test mode).
+
+mod sources;
 
 use anyhow::Result;
 use lonode_core::config;
 use lonode_gateway::VoiceConfig;
-use lonode_runtime::plugins::PluginRegistry;
 use lonode_runtime::runner;
-use lonode_source_spotify::{SpotifyCredentials, SpotifyResolver};
-use std::sync::Arc;
 
 const ENV_ENDPOINT: &str = "VOICE_ENDPOINT";
 const ENV_GUILD: &str = "VOICE_GUILD_ID";
 const ENV_USER: &str = "VOICE_USER_ID";
 const ENV_SESSION: &str = "VOICE_SESSION_ID";
 const ENV_TOKEN: &str = "VOICE_TOKEN";
-const ENV_SPOTIFY_ID: &str = "SPOTIFY_CLIENT_ID";
-const ENV_SPOTIFY_SECRET: &str = "SPOTIFY_CLIENT_SECRET";
-const ENV_APPLE_MUSIC_TOKEN: &str = "APPLE_MUSIC_DEVELOPER_TOKEN";
-const ENV_APPLE_MUSIC_USER_TOKEN: &str = "APPLE_MUSIC_USER_TOKEN";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,7 +25,7 @@ async fn main() -> Result<()> {
     tracing::info!(host = %cfg.server.host, port = cfg.server.port, "lonode starting");
 
     let players = lonode_runtime::player::PlayerManager::new(cfg.limits.clone());
-    let sources = build_sources(&cfg).await;
+    let registry = sources::build_sources(&cfg).await;
 
     let voice_task = if let Some(voice) = read_voice_env() {
         let players = players.clone();
@@ -48,7 +41,7 @@ async fn main() -> Result<()> {
     };
 
     tokio::select! {
-        res = lonode_api::serve(&cfg, players, sources) => {
+        res = lonode_api::serve(&cfg, players, registry) => {
             if let Err(e) = res {
                 tracing::error!(error = %e, "api server ended");
             }
@@ -62,87 +55,6 @@ async fn main() -> Result<()> {
         t.abort();
     }
     Ok(())
-}
-
-/// Build the source registry: built-ins first, then dynamic plugins.
-///
-/// Registration order: specific sources first (youtube, soundcloud, spotify,
-/// apple music, deezer), then stubs (bandcamp, twitch, vimeo), then radio LAST
-/// (fallback for any HTTP URL not claimed by a specific source).
-async fn build_sources(cfg: &config::Config) -> PluginRegistry {
-    let reg = PluginRegistry::new();
-
-    // YouTube (real implementation via rusty_ytdl).
-    if cfg.sources.youtube {
-        reg.register_builtin(Arc::new(lonode_source_youtube::YoutubeSource::new()))
-            .await;
-        tracing::info!("registered source: youtube");
-    }
-
-    // SoundCloud (needs client_id — disabled without it, but registered for /v4/info).
-    reg.register_builtin(Arc::new(lonode_sources_builtin::SoundCloudSource::new()))
-        .await;
-    tracing::info!("registered source: soundcloud (disabled without client_id)");
-
-    // Spotify resolver (env-var driven — needs client_id + secret).
-    if let (Ok(id), Ok(secret)) = (
-        std::env::var(ENV_SPOTIFY_ID),
-        std::env::var(ENV_SPOTIFY_SECRET),
-    ) {
-        let creds = SpotifyCredentials {
-            client_id: id,
-            client_secret: secret,
-        };
-        reg.register_builtin(Arc::new(SpotifyResolver::with_credentials(creds)))
-            .await;
-        tracing::info!("registered source: spotify");
-    } else {
-        tracing::info!(
-            "spotify disabled (set SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET to enable)"
-        );
-    }
-
-    // Apple Music resolver (env-var driven — needs developer JWT token).
-    if let Ok(token) = std::env::var(ENV_APPLE_MUSIC_TOKEN) {
-        let creds = lonode_source_apple_music::AppleMusicCredentials {
-            developer_token: token,
-            user_token: std::env::var(ENV_APPLE_MUSIC_USER_TOKEN).ok(),
-        };
-        reg.register_builtin(Arc::new(
-            lonode_source_apple_music::AppleMusicSource::with_credentials(creds),
-        ))
-        .await;
-        tracing::info!("registered source: applemusic");
-    } else {
-        tracing::info!("apple music disabled (set APPLE_MUSIC_DEVELOPER_TOKEN to enable)");
-    }
-
-    // Deezer (native streaming — always enabled, no creds needed for previews).
-    reg.register_builtin(Arc::new(lonode_source_deezer::DeezerSource::new()))
-        .await;
-    tracing::info!("registered source: deezer");
-
-    // Stubs (bandcamp, twitch, vimeo) — registered so /v4/info lists them.
-    reg.register_builtin(Arc::new(lonode_sources_builtin::BandcampSource::new()))
-        .await;
-    reg.register_builtin(Arc::new(lonode_sources_builtin::TwitchSource::new()))
-        .await;
-    reg.register_builtin(Arc::new(lonode_sources_builtin::VimeoSource::new()))
-        .await;
-    tracing::info!("registered sources: bandcamp, twitch, vimeo (stubs)");
-
-    // Radio LAST — fallback for any HTTP URL not claimed by a specific source.
-    if cfg.sources.radio {
-        reg.register_builtin(Arc::new(lonode_sources_builtin::RadioSource::new()))
-            .await;
-        tracing::info!("registered source: radio (fallback)");
-    }
-
-    match reg.load_dir(&cfg.sources.plugins_dir).await {
-        Ok(n) => tracing::info!(n, "loaded dynamic plugins"),
-        Err(e) => tracing::warn!(error = %e, "failed to scan plugins dir"),
-    }
-    reg
 }
 
 fn init_tracing() {

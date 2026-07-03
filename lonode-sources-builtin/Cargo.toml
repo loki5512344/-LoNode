@@ -1,0 +1,22 @@
+[package]
+name = "lonode-sources-builtin"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Built-in audio sources for LoNode (radio, YouTube, SoundCloud, Bandcamp, Twitch, Vimeo)."
+
+[lib]
+name = "lonode_sources_builtin"
+path = "src/lib.rs"
+
+[dependencies]
+lonode-plugin-api = { path = "../lonode-plugin-api" }
+async-trait = "0.1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json"] }
+tokio = { version = "1", default-features = false, features = ["io-util"] }
+tokio-util = { version = "0.7", features = ["io"] }
+futures-util = "0.3"
+serde_json = "1"

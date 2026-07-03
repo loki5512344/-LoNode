@@ -1,19 +1,18 @@
 [package]
-name = "lonode-core"
+name = "lonode-audio"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "LoNode core: shared config, types, and error alias."
+description = "LoNode audio: FrameSource trait and Opus encoder."
 
 [lib]
-name = "lonode_core"
+name = "lonode_audio"
 path = "src/lib.rs"
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-toml = "0.8"
-tracing = "0.1"
+lonode-core = { path = "../lonode-core" }
+opus = "0.3"
 anyhow = "1"

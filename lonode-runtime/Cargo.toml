@@ -1,0 +1,29 @@
+[package]
+name = "lonode-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "LoNode runtime: voice session orchestration, player manager, plugin loader."
+
+[lib]
+name = "lonode_runtime"
+path = "src/lib.rs"
+
+[dependencies]
+lonode-core = { path = "../lonode-core" }
+lonode-gateway = { path = "../lonode-gateway" }
+lonode-udp = { path = "../lonode-udp" }
+lonode-audio = { path = "../lonode-audio" }
+lonode-plugin-api = { path = "../lonode-plugin-api" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "time"] }
+tracing = "0.1"
+anyhow = "1"
+libloading = "0.8"
+async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+pretty_assertions = "1"

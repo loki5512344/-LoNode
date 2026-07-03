@@ -1,0 +1,20 @@
+[package]
+name = "lonode-udp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "LoNode UDP: RTP packets and XSalsa20-Poly1305 encryption for Discord voice."
+
+[lib]
+name = "lonode_udp"
+path = "src/lib.rs"
+
+[dependencies]
+lonode-core = { path = "../lonode-core" }
+tokio = { version = "1", features = ["net", "time"] }
+xsalsa20poly1305 = { version = "0.9", features = ["std"] }
+tracing = "0.1"
+anyhow = "1"

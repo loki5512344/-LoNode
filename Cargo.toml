@@ -1,11 +1,22 @@
 [workspace]
 resolver = "2"
-members = ["lonode", "lonode-core", "lonode-plugin-api", "lonode-sources"]
+members = [
+    "lonode",
+    "lonode-core",
+    "lonode-gateway",
+    "lonode-udp",
+    "lonode-audio",
+    "lonode-runtime",
+    "lonode-api",
+    "lonode-plugin-api",
+    "lonode-sources-builtin",
+    "lonode-source-spotify",
+]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.80"
 license = "MIT"
 authors = ["LoNode contributors"]
-repository = "https://github.com/loki5512344/lonode"
+repository = "https://github.com/loki5512344/-LoNode"

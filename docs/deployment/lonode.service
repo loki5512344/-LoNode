@@ -1,0 +1,35 @@
+# systemd unit — LoNode
+#
+# Install: sudo cp lonode.service /etc/systemd/system/
+# Start:   sudo systemctl enable --now lonode
+# Logs:    journalctl -u lonode -f
+
+[Unit]
+Description=LoNode — Discord audio node
+After=network.target
+
+[Service]
+Type=simple
+User=lonode
+Group=lonode
+WorkingDirectory=/opt/lonode
+ExecStart=/opt/lonode/lonode
+Restart=on-failure
+RestartSec=5
+
+# Environment variables (voice session — optional, for dev mode)
+# Environment=VOICE_ENDPOINT=wss://...
+# Environment=VOICE_GUILD_ID=...
+# Environment=VOICE_USER_ID=...
+# Environment=VOICE_SESSION_ID=...
+# Environment=VOICE_TOKEN=...
+
+# Spotify (optional)
+# Environment=SPOTIFY_CLIENT_ID=...
+# Environment=SPOTIFY_CLIENT_SECRET=...
+
+# Logging
+Environment=RUST_LOG=lonode=info,warn
+
+[Install]
+WantedBy=multi-user.target

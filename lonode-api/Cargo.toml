@@ -1,0 +1,29 @@
+[package]
+name = "lonode-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "LoNode API: axum REST + WebSocket handlers (Lavalink v4 compatible)."
+
+[lib]
+name = "lonode_api"
+path = "src/lib.rs"
+
+[dependencies]
+lonode-core = { path = "../lonode-core" }
+lonode-runtime = { path = "../lonode-runtime" }
+lonode-plugin-api = { path = "../lonode-plugin-api" }
+tokio = { version = "1", features = ["net", "macros"] }
+axum = { version = "0.7", features = ["ws"] }
+hyper = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+futures-util = "0.3"
+tracing = "0.1"
+anyhow = "1"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }

@@ -14,7 +14,11 @@ path = "src/main.rs"
 
 [dependencies]
 lonode-core = { path = "../lonode-core" }
-lonode-sources = { path = "../lonode-sources" }
+lonode-gateway = { path = "../lonode-gateway" }
+lonode-runtime = { path = "../lonode-runtime" }
+lonode-api = { path = "../lonode-api" }
+lonode-sources-builtin = { path = "../lonode-sources-builtin" }
+lonode-source-spotify = { path = "../lonode-source-spotify" }
 anyhow = "1"
 tracing = "0.1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }

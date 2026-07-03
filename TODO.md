@@ -4,10 +4,16 @@
 
 ```
 lonode/
-├── lonode-core/       # Voice UDP, Player, API
-├── lonode-sources/    # Встроенные парсеры (radio, youtube)
-├── lonode-plugin-api/ # Публичные traits для плагинов (.so)
-└── lonode/            # Бинарник, собирает всё вместе
+├── lonode/                    # Бинарник, собирает всё вместе
+├── lonode-core/               # Config, общие типы
+├── lonode-gateway/            # Discord Voice Gateway WebSocket
+├── lonode-udp/                # RTP + XSalsa20-Poly1305 encryption
+├── lonode-audio/              # FrameSource trait + Opus encoder
+├── lonode-runtime/            # Player manager + plugin loader + runner
+├── lonode-api/                # axum REST + WebSocket (Lavalink v4)
+├── lonode-plugin-api/         # Публичные traits для плагинов (.so)
+├── lonode-sources-builtin/    # Radio, SoundCloud, Bandcamp, Twitch, Vimeo, YouTube
+└── lonode-source-spotify/     # Spotify (YouTube matching pattern)
 ```
 
 ---
@@ -58,6 +64,16 @@ lonode/
   - [ ] `rusty-ytdl` интеграция
   - [ ] Поиск по запросу
   - [ ] Плейлисты
+- [x] SoundCloud
+  - [x] URL detection + API resolve (нужен client_id)
+  - [ ] Playlist support
+- [x] Bandcamp (stub)
+- [x] Twitch (stub)
+- [x] Vimeo (stub)
+- [x] Spotify
+  - [x] Spotify API client (track metadata)
+  - [x] YouTube matching pattern (resolve → search YouTube → play)
+  - [ ] Playlist/album support
 
 ## Phase 4 — Plugin System
 

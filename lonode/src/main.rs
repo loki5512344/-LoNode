@@ -1,18 +1,18 @@
 //! LoNode binary entry point.
 //!
 //! - Loads `config.toml` (or falls back to defaults).
-//! - Builds a `PluginRegistry`: registers built-in sources (radio, youtube)
-//!   and loads any `.so` files from `config.sources.plugins_dir`.
+//! - Builds a `PluginRegistry`: registers built-in sources (radio, youtube,
+//!   soundcloud, bandcamp, twitch, vimeo) + Spotify resolver, then loads
+//!   any `.so` files from `config.sources.plugins_dir`.
 //! - Starts the axum HTTP/WS API server (Lavalink v4 compatible).
 //! - Optionally also starts one voice session from env vars (dev/test mode).
 
 use anyhow::Result;
-use lonode_core::api;
 use lonode_core::config;
-use lonode_core::gateway::VoiceConfig;
-use lonode_core::player::PlayerManager;
-use lonode_core::plugins::PluginRegistry;
-use lonode_core::runner;
+use lonode_gateway::VoiceConfig;
+use lonode_runtime::plugins::PluginRegistry;
+use lonode_runtime::runner;
+use lonode_source_spotify::{SpotifyCredentials, SpotifyResolver};
 use std::sync::Arc;
 
 const ENV_ENDPOINT: &str = "VOICE_ENDPOINT";
@@ -20,6 +20,8 @@ const ENV_GUILD: &str = "VOICE_GUILD_ID";
 const ENV_USER: &str = "VOICE_USER_ID";
 const ENV_SESSION: &str = "VOICE_SESSION_ID";
 const ENV_TOKEN: &str = "VOICE_TOKEN";
+const ENV_SPOTIFY_ID: &str = "SPOTIFY_CLIENT_ID";
+const ENV_SPOTIFY_SECRET: &str = "SPOTIFY_CLIENT_SECRET";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -27,10 +29,9 @@ async fn main() -> Result<()> {
     let cfg = config::load("config.toml")?;
     tracing::info!(host = %cfg.server.host, port = cfg.server.port, "lonode starting");
 
-    let players = PlayerManager::new(cfg.limits.clone());
+    let players = lonode_runtime::player::PlayerManager::new(cfg.limits.clone());
     let sources = build_sources(&cfg).await;
 
-    // Optional dev-mode voice session from env vars.
     let voice_task = if let Some(voice) = read_voice_env() {
         let players = players.clone();
         Some(tokio::spawn(async move {
@@ -45,7 +46,7 @@ async fn main() -> Result<()> {
     };
 
     tokio::select! {
-        res = api::serve(&cfg, players, sources) => {
+        res = lonode_api::serve(&cfg, players, sources) => {
             if let Err(e) = res {
                 tracing::error!(error = %e, "api server ended");
             }
@@ -61,19 +62,54 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Build the source registry: built-ins first, then dynamic plugins.
+/// Build the source registry: built-ins first, then Spotify, then dynamic plugins.
 async fn build_sources(cfg: &config::Config) -> PluginRegistry {
     let reg = PluginRegistry::new();
-    if cfg.sources.radio {
-        reg.register_builtin(Arc::new(lonode_sources::RadioSource::new()))
-            .await;
-        tracing::info!("registered built-in source: radio");
-    }
+
+    // Specific sources first (highest priority).
     if cfg.sources.youtube {
-        reg.register_builtin(Arc::new(lonode_sources::YoutubeSource::new()))
+        reg.register_builtin(Arc::new(lonode_sources_builtin::YoutubeSource::new()))
             .await;
-        tracing::info!("registered built-in source: youtube (stub)");
+        tracing::info!("registered source: youtube (stub)");
     }
+    // SoundCloud, Bandcamp, Twitch, Vimeo are stubs but registered so their
+    // names appear in /v4/info and the ABI is exercised. They return
+    // supports()=false until implemented, so they never shadow other sources.
+    reg.register_builtin(Arc::new(lonode_sources_builtin::SoundCloudSource::new()))
+        .await;
+    reg.register_builtin(Arc::new(lonode_sources_builtin::BandcampSource::new()))
+        .await;
+    reg.register_builtin(Arc::new(lonode_sources_builtin::TwitchSource::new()))
+        .await;
+    reg.register_builtin(Arc::new(lonode_sources_builtin::VimeoSource::new()))
+        .await;
+    tracing::info!("registered sources: soundcloud, bandcamp, twitch, vimeo (stubs)");
+
+    // Spotify resolver (env-var driven — needs client_id + secret).
+    if let (Ok(id), Ok(secret)) = (
+        std::env::var(ENV_SPOTIFY_ID),
+        std::env::var(ENV_SPOTIFY_SECRET),
+    ) {
+        let creds = SpotifyCredentials {
+            client_id: id,
+            client_secret: secret,
+        };
+        reg.register_builtin(Arc::new(SpotifyResolver::with_credentials(creds)))
+            .await;
+        tracing::info!("registered source: spotify");
+    } else {
+        tracing::info!(
+            "spotify disabled (set SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET to enable)"
+        );
+    }
+
+    // Radio LAST — fallback for any HTTP URL not claimed by a specific source.
+    if cfg.sources.radio {
+        reg.register_builtin(Arc::new(lonode_sources_builtin::RadioSource::new()))
+            .await;
+        tracing::info!("registered source: radio (fallback)");
+    }
+
     match reg.load_dir(&cfg.sources.plugins_dir).await {
         Ok(n) => tracing::info!(n, "loaded dynamic plugins"),
         Err(e) => tracing::warn!(error = %e, "failed to scan plugins dir"),
@@ -96,18 +132,4 @@ fn read_voice_env() -> Option<VoiceConfig> {
         session_id: std::env::var(ENV_SESSION).ok()?,
         token: std::env::var(ENV_TOKEN).ok()?,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn env_names_are_nonempty() {
-        assert!(!ENV_ENDPOINT.is_empty());
-        assert!(!ENV_GUILD.is_empty());
-        assert!(!ENV_USER.is_empty());
-        assert!(!ENV_SESSION.is_empty());
-        assert!(!ENV_TOKEN.is_empty());
-    }
 }

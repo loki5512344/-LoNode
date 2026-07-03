@@ -1,0 +1,23 @@
+[package]
+name = "lonode-gateway"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "LoNode gateway: Discord Voice Gateway WebSocket client."
+
+[lib]
+name = "lonode_gateway"
+path = "src/lib.rs"
+
+[dependencies]
+lonode-core = { path = "../lonode-core" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+anyhow = "1"

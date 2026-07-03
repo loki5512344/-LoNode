@@ -1,0 +1,17 @@
+[package]
+name = "plugin-example"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "plugin_example"
+crate-type = ["cdylib"]
+
+[dependencies]
+lonode-plugin-api = { path = "../../lonode-plugin-api" }
+async-trait = "0.1"
+tokio = { version = "1", default-features = false, features = ["io-util"] }
+
+# Exclude from the main workspace — this is a standalone cdylib example.
+[workspace]

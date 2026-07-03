@@ -50,18 +50,18 @@ lonode/
 
 ## Phase 3 — Источники
 
-- [ ] Интернет-радио
-  - [ ] Icecast / Shoutcast (chunked HTTP stream)
+- [x] Интернет-радио
+  - [x] Icecast / Shoutcast (chunked HTTP stream)
   - [ ] HLS (`m3u8` парсинг + сегменты)
-  - [ ] ICY metadata (название трека из стрима)
-- [ ] YouTube
+  - [x] ICY metadata (название трека из стрима)
+- [x] YouTube
   - [ ] `rusty-ytdl` интеграция
   - [ ] Поиск по запросу
   - [ ] Плейлисты
 
 ## Phase 4 — Plugin System
 
-- [ ] Trait `AudioSource` как публичный интерфейс плагина
+- [x] Trait `AudioSource` как публичный интерфейс плагина
   ```rust
   pub trait AudioSource: Send + Sync {
       fn name(&self) -> &str;
@@ -70,14 +70,14 @@ lonode/
       async fn stream(&self, url: &str) -> Result<Box<dyn AsyncRead>>;
   }
   ```
-- [ ] Встроенные источники (trait-based, компилируются вместе)
-  - [ ] Radio (`lonode-sources/radio`)
-  - [ ] YouTube (`lonode-sources/youtube`)
-- [ ] Динамические плагины (`.so` через `libloading`)
-  - [ ] Загрузка из папки `plugins/` при старте
-  - [ ] Единая точка входа `lonode_plugin_init() -> Box<dyn AudioSource>`
+- [x] Встроенные источники (trait-based, компилируются вместе)
+  - [x] Radio (`lonode-sources/radio`)
+  - [x] YouTube (`lonode-sources/youtube`) — stub
+- [x] Динамические плагины (`.so` через `libloading`)
+  - [x] Загрузка из папки `plugins/` при старте
+  - [x] Единая точка входа `lonode_plugin_init() -> *mut dyn AudioSource`
   - [ ] Горячая перезагрузка (опционально, позже)
-- [ ] Реестр источников — при `play` перебирает все плагины, первый у кого `supports()` = true берёт задачу
+- [x] Реестр источников — при `play` перебирает все плагины, первый у кого `supports()` = true берёт задачу
 
 ## Phase 5 — Config
 

@@ -7,6 +7,7 @@ pub use state::{require_auth, AppState};
 
 use crate::config::Config;
 use crate::player::PlayerManager;
+use crate::plugins::PluginRegistry;
 use crate::Result;
 use axum::middleware::from_fn;
 use axum::routing::get;
@@ -33,8 +34,8 @@ pub fn build_router(state: AppState) -> Router {
 ///
 /// # Errors
 /// Returns an error if the socket cannot be bound.
-pub async fn serve(config: &Config, players: PlayerManager) -> Result<()> {
-    let state = AppState::new(config.clone(), players);
+pub async fn serve(config: &Config, players: PlayerManager, sources: PluginRegistry) -> Result<()> {
+    let state = AppState::new(config.clone(), players, sources);
     let app = build_router(state);
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port).parse()?;
     tracing::info!(%addr, "http api listening");
@@ -51,7 +52,8 @@ mod tests {
     fn router_builds_without_panicking() {
         let cfg = Config::default();
         let players = PlayerManager::new(cfg.limits.clone());
-        let state = AppState::new(cfg, players);
+        let sources = PluginRegistry::new();
+        let state = AppState::new(cfg, players, sources);
         let _router = build_router(state);
     }
 }

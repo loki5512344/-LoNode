@@ -101,6 +101,13 @@ pub async fn patch_player(
     Path((_session, guild_id)): Path<(String, String)>,
     Json(body): Json<UpdatePlayerRequest>,
 ) -> Result<Json<PlayerResponse>, StatusCode> {
+    // If `encoded_track` looks like a URL, verify a source can handle it.
+    if let Some(track) = body.encoded_track.as_deref() {
+        let is_url = track.starts_with("http://") || track.starts_with("https://");
+        if is_url && state.sources().find_for(track).await.is_none() {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
     state
         .players()
         .get_or_create(&guild_id)

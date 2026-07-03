@@ -12,4 +12,10 @@ description = "Built-in audio sources for LoNode (radio, YouTube)."
 name = "lonode_sources"
 path = "src/lib.rs"
 
-# Dependencies will be added in Phase 3 (radio, YouTube).
+[dependencies]
+lonode-plugin-api = { path = "../lonode-plugin-api" }
+async-trait = "0.1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+tokio = { version = "1", default-features = false, features = ["io-util"] }
+tokio-util = { version = "0.7", features = ["io"] }
+futures-util = "0.3"

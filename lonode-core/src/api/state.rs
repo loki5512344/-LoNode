@@ -5,6 +5,7 @@
 
 use crate::config::Config;
 use crate::player::PlayerManager;
+use crate::plugins::PluginRegistry;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
@@ -21,16 +22,18 @@ pub struct AppState {
 struct AppStateInner {
     pub config: Config,
     pub players: PlayerManager,
+    pub sources: PluginRegistry,
     pub started_at: std::time::Instant,
 }
 
 impl AppState {
     #[must_use]
-    pub fn new(config: Config, players: PlayerManager) -> Self {
+    pub fn new(config: Config, players: PlayerManager, sources: PluginRegistry) -> Self {
         Self {
             inner: Arc::new(AppStateInner {
                 config,
                 players,
+                sources,
                 started_at: std::time::Instant::now(),
             }),
         }
@@ -44,6 +47,11 @@ impl AppState {
     #[must_use]
     pub fn players(&self) -> &PlayerManager {
         &self.inner.players
+    }
+
+    #[must_use]
+    pub fn sources(&self) -> &PluginRegistry {
+        &self.inner.sources
     }
 
     #[must_use]
@@ -96,6 +104,7 @@ mod tests {
     fn make_state() -> AppState {
         let cfg = Config::default();
         let players = PlayerManager::new(cfg.limits.clone());
-        AppState::new(cfg, players)
+        let sources = PluginRegistry::new();
+        AppState::new(cfg, players, sources)
     }
 }

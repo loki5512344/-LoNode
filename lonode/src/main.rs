@@ -22,6 +22,8 @@ const ENV_SESSION: &str = "VOICE_SESSION_ID";
 const ENV_TOKEN: &str = "VOICE_TOKEN";
 const ENV_SPOTIFY_ID: &str = "SPOTIFY_CLIENT_ID";
 const ENV_SPOTIFY_SECRET: &str = "SPOTIFY_CLIENT_SECRET";
+const ENV_APPLE_MUSIC_TOKEN: &str = "APPLE_MUSIC_DEVELOPER_TOKEN";
+const ENV_APPLE_MUSIC_USER_TOKEN: &str = "APPLE_MUSIC_USER_TOKEN";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -62,28 +64,25 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Build the source registry: built-ins first, then Spotify, then dynamic plugins.
+/// Build the source registry: built-ins first, then dynamic plugins.
+///
+/// Registration order: specific sources first (youtube, soundcloud, spotify,
+/// apple music, deezer), then stubs (bandcamp, twitch, vimeo), then radio LAST
+/// (fallback for any HTTP URL not claimed by a specific source).
 async fn build_sources(cfg: &config::Config) -> PluginRegistry {
     let reg = PluginRegistry::new();
 
-    // Specific sources first (highest priority).
+    // YouTube (real implementation via rusty_ytdl).
     if cfg.sources.youtube {
-        reg.register_builtin(Arc::new(lonode_sources_builtin::YoutubeSource::new()))
+        reg.register_builtin(Arc::new(lonode_source_youtube::YoutubeSource::new()))
             .await;
-        tracing::info!("registered source: youtube (stub)");
+        tracing::info!("registered source: youtube");
     }
-    // SoundCloud, Bandcamp, Twitch, Vimeo are stubs but registered so their
-    // names appear in /v4/info and the ABI is exercised. They return
-    // supports()=false until implemented, so they never shadow other sources.
+
+    // SoundCloud (needs client_id — disabled without it, but registered for /v4/info).
     reg.register_builtin(Arc::new(lonode_sources_builtin::SoundCloudSource::new()))
         .await;
-    reg.register_builtin(Arc::new(lonode_sources_builtin::BandcampSource::new()))
-        .await;
-    reg.register_builtin(Arc::new(lonode_sources_builtin::TwitchSource::new()))
-        .await;
-    reg.register_builtin(Arc::new(lonode_sources_builtin::VimeoSource::new()))
-        .await;
-    tracing::info!("registered sources: soundcloud, bandcamp, twitch, vimeo (stubs)");
+    tracing::info!("registered source: soundcloud (disabled without client_id)");
 
     // Spotify resolver (env-var driven — needs client_id + secret).
     if let (Ok(id), Ok(secret)) = (
@@ -102,6 +101,35 @@ async fn build_sources(cfg: &config::Config) -> PluginRegistry {
             "spotify disabled (set SPOTIFY_CLIENT_ID + SPOTIFY_CLIENT_SECRET to enable)"
         );
     }
+
+    // Apple Music resolver (env-var driven — needs developer JWT token).
+    if let Ok(token) = std::env::var(ENV_APPLE_MUSIC_TOKEN) {
+        let creds = lonode_source_apple_music::AppleMusicCredentials {
+            developer_token: token,
+            user_token: std::env::var(ENV_APPLE_MUSIC_USER_TOKEN).ok(),
+        };
+        reg.register_builtin(Arc::new(
+            lonode_source_apple_music::AppleMusicSource::with_credentials(creds),
+        ))
+        .await;
+        tracing::info!("registered source: applemusic");
+    } else {
+        tracing::info!("apple music disabled (set APPLE_MUSIC_DEVELOPER_TOKEN to enable)");
+    }
+
+    // Deezer (native streaming — always enabled, no creds needed for previews).
+    reg.register_builtin(Arc::new(lonode_source_deezer::DeezerSource::new()))
+        .await;
+    tracing::info!("registered source: deezer");
+
+    // Stubs (bandcamp, twitch, vimeo) — registered so /v4/info lists them.
+    reg.register_builtin(Arc::new(lonode_sources_builtin::BandcampSource::new()))
+        .await;
+    reg.register_builtin(Arc::new(lonode_sources_builtin::TwitchSource::new()))
+        .await;
+    reg.register_builtin(Arc::new(lonode_sources_builtin::VimeoSource::new()))
+        .await;
+    tracing::info!("registered sources: bandcamp, twitch, vimeo (stubs)");
 
     // Radio LAST — fallback for any HTTP URL not claimed by a specific source.
     if cfg.sources.radio {

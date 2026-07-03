@@ -97,7 +97,7 @@ lonode/
 
 ## Phase 5 — Config
 
-- [ ] `config.toml`
+- [x] `config.toml`
   ```toml
   [server]
   host = "0.0.0.0"
@@ -118,8 +118,54 @@ lonode/
   max_queue = 500
   ```
 - [ ] Hot reload конфига (SIGHUP)
-- [ ] Логи (`tracing` крейт, уровень через config)
-- [ ] Graceful shutdown
-- [ ] Docker / `Dockerfile`
-- [ ] `docs/api.md`
-- [ ] `docs/plugin-dev.md` — гайд по написанию плагинов
+- [x] Логи (`tracing` крейт, уровень через config)
+- [x] Graceful shutdown (ctrl-c)
+- [x] Docker / `Dockerfile` (в `docs/deployment/`)
+- [x] `docs/api.md`
+- [x] `docs/plugin-dev.md` — гайд по написанию плагинов
+
+## Phase 6 — Plugins (Lavalink-эквиваленты)
+
+Реализация плагинов по аналогии с Lavalink plugin ecosystem. Каждый плагин —
+отдельный crate в workspace, регистрируется через `PluginRegistry`.
+
+### YouTube Plugin (`lonode-source-youtube`)
+- [x] URL detection (youtube.com/watch, youtu.be/)
+- [ ] `rusty-ytdl` интеграция — real video download + audio extraction
+- [ ] Поиск по запросу (search query → track)
+- [ ] Плейлисты (youtube.com/playlist)
+- [ ] Stream as AsyncRead (compressed audio bytes)
+
+### LavaSrc Plugin (`lonode-source-lavasrc`)
+Lavalink LavaSrc эквивалент — Spotify, Apple Music, Deezer.
+- [x] Spotify (уже в `lonode-source-spotify` — YouTube matching pattern)
+- [ ] Apple Music API resolver (needs developer token)
+  - [ ] Track URL detection (music.apple.com/track/)
+  - [ ] Catalog search
+  - [ ] YouTube matching for playback (Apple Music has no public streaming)
+- [ ] Deezer resolver (native playback — Deezer has public streaming API)
+  - [ ] Track URL detection (deezer.com/track/)
+  - [ ] API resolve → stream URL
+  - [ ] Direct stream (no YouTube fallback needed)
+
+### SponsorBlock Plugin (`lonode-plugin-sponsorblock`)
+- [ ] SponsorBlock API client (sponsor.ajay.app API)
+  - [ ] Get segments for YouTube video ID
+  - [ ] Skip sponsor segments during playback
+  - [ ] Return chapter information (YouTube video chapters)
+- [ ] Integration with player (auto-skip on segment boundary)
+
+### Google Cloud TTS Plugin (`lonode-plugin-tts-google`)
+- [ ] Google Cloud Text-to-Speech API client
+  - [ ] Synthesize text → MP3/Opus bytes
+  - [ ] Voice selection (language, gender, name)
+  - [ ] SSML support
+- [ ] AudioSource impl — generate audio on-the-fly from text
+- [ ] Config: `GOOGLE_APPLICATION_CREDENTIALS` env var
+
+### План интеграции
+1. YouTube (foundation — нужен для Spotify/Apple Music matching)
+2. SponsorBlock (depends on YouTube)
+3. LavaSrc: Apple Music + Deezer
+4. Google Cloud TTS (standalone)
+

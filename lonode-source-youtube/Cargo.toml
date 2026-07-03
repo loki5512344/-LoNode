@@ -1,0 +1,21 @@
+[package]
+name = "lonode-source-youtube"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "YouTube source for LoNode — video download + audio extraction via rusty-ytdl."
+
+[lib]
+name = "lonode_source_youtube"
+path = "src/lib.rs"
+
+[dependencies]
+lonode-plugin-api = { path = "../lonode-plugin-api" }
+async-trait = "0.1"
+rusty_ytdl = "0.7"
+tokio = { version = "1", default-features = false, features = ["io-util"] }
+tracing = "0.1"
+thiserror = "2"

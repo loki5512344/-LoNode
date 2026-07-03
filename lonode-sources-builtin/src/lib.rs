@@ -1,19 +1,21 @@
 //! `lonode-sources-builtin` — built-in audio sources for LoNode.
 //!
 //! Sources (in registration order):
-//! - [`RadioSource`] — Icecast/Shoutcast HTTP streams with ICY metadata.
 //! - [`SoundCloudSource`] — SoundCloud tracks/playlists (API resolve).
 //! - [`BandcampSource`] — Bandcamp track URLs (stub).
 //! - [`TwitchSource`] — Twitch VODs/clips (stub).
 //! - [`VimeoSource`] — Vimeo videos (stub).
-//! - [`YoutubeSource`] — YouTube (stub, rusty-ytdl planned).
+//! - [`RadioSource`] — Icecast/Shoutcast HTTP streams with ICY metadata.
+//!
+//! Note: YouTube is in the separate `lonode-source-youtube` crate (real impl
+//! via `rusty_ytdl`). Spotify is in `lonode-source-spotify`.
 //! - [`SourceRegistry`] — finds the right source for a URL.
 
 pub mod http;
 pub mod platforms;
 
 pub use http::RadioSource;
-pub use platforms::{BandcampSource, SoundCloudSource, TwitchSource, VimeoSource, YoutubeSource};
+pub use platforms::{BandcampSource, SoundCloudSource, TwitchSource, VimeoSource};
 
 use lonode_plugin_api::AudioSource;
 use std::sync::Arc;
@@ -41,7 +43,6 @@ impl SourceRegistry {
     #[must_use]
     pub fn with_builtins() -> Self {
         let mut r = Self::new();
-        r.register(Arc::new(YoutubeSource::new()));
         r.register(Arc::new(SoundCloudSource::new()));
         r.register(Arc::new(BandcampSource::new()));
         r.register(Arc::new(TwitchSource::new()));
@@ -80,18 +81,11 @@ mod tests {
     #[test]
     fn builtins_registered_in_order() {
         let r = SourceRegistry::with_builtins();
-        assert_eq!(r.len(), 6);
+        assert_eq!(r.len(), 5);
         let names = r.source_names();
         assert_eq!(
             names,
-            vec![
-                "youtube",
-                "soundcloud",
-                "bandcamp",
-                "twitch",
-                "vimeo",
-                "radio"
-            ]
+            vec!["soundcloud", "bandcamp", "twitch", "vimeo", "radio"]
         );
     }
 

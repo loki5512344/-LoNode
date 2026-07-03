@@ -51,6 +51,8 @@ impl AudioSource for RadioSource {
             "bandcamp.com",
             "twitch.tv",
             "vimeo.com",
+            "music.apple.com",
+            "deezer.com",
         ] {
             if lower.contains(domain) {
                 return false;

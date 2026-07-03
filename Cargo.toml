@@ -11,6 +11,11 @@ members = [
     "lonode-plugin-api",
     "lonode-sources-builtin",
     "lonode-source-spotify",
+    "lonode-source-youtube",
+    "lonode-plugin-sponsorblock",
+    "lonode-source-apple-music",
+    "lonode-source-deezer",
+    "lonode-plugin-tts-google",
 ]
 
 [workspace.package]

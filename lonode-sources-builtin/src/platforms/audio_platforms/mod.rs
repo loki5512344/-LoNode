@@ -4,4 +4,4 @@ pub mod soundcloud;
 pub mod stubs;
 
 pub use soundcloud::SoundCloudSource;
-pub use stubs::{BandcampSource, YoutubeSource};
+pub use stubs::BandcampSource;

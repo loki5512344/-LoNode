@@ -19,6 +19,9 @@ lonode-runtime = { path = "../lonode-runtime" }
 lonode-api = { path = "../lonode-api" }
 lonode-sources-builtin = { path = "../lonode-sources-builtin" }
 lonode-source-spotify = { path = "../lonode-source-spotify" }
+lonode-source-youtube = { path = "../lonode-source-youtube" }
+lonode-source-apple-music = { path = "../lonode-source-apple-music" }
+lonode-source-deezer = { path = "../lonode-source-deezer" }
 anyhow = "1"
 tracing = "0.1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }

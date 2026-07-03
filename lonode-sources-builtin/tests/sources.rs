@@ -1,8 +1,8 @@
-//! Integration tests for built-in sources.
+//! Integration tests for built-in sources (YouTube tests are in lonode-source-youtube).
 
 use lonode_plugin_api::AudioSource;
 use lonode_sources_builtin::{
-    BandcampSource, RadioSource, SoundCloudSource, TwitchSource, VimeoSource, YoutubeSource,
+    BandcampSource, RadioSource, SoundCloudSource, TwitchSource, VimeoSource,
 };
 
 #[test]
@@ -32,6 +32,8 @@ fn radio_rejects_known_platforms() {
     assert!(!r.supports("https://soundcloud.com/a/t"));
     assert!(!r.supports("https://open.spotify.com/track/abc"));
     assert!(!r.supports("https://youtube.com/watch?v=x"));
+    assert!(!r.supports("https://music.apple.com/us/album/x/123"));
+    assert!(!r.supports("https://www.deezer.com/track/123"));
 }
 
 #[test]
@@ -61,18 +63,8 @@ fn vimeo_detects_urls() {
 }
 
 #[test]
-fn youtube_detects_urls() {
-    assert!(YoutubeSource::is_youtube_url(
-        "https://youtube.com/watch?v=abc"
-    ));
-    assert!(YoutubeSource::is_youtube_url("https://youtu.be/abc"));
-    assert!(!YoutubeSource::is_youtube_url("https://example.com"));
-}
-
-#[test]
 fn all_stubs_disabled() {
     assert!(!BandcampSource::new().supports("https://artist.bandcamp.com/track/x"));
     assert!(!TwitchSource::new().supports("https://twitch.tv/videos/1"));
     assert!(!VimeoSource::new().supports("https://vimeo.com/1"));
-    assert!(!YoutubeSource::new().supports("https://youtube.com/watch?v=x"));
 }

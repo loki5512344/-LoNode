@@ -4,9 +4,11 @@
 //! [`Config::default`](crate::config::types::Config::default) when the file
 //! is missing.
 
+pub mod extra;
 pub mod types;
 
-pub use types::{Config, ServerConfig};
+pub use extra::{LimitsConfig, SourcesConfig};
+pub use types::{AudioConfig, Config, ServerConfig};
 
 use crate::Result;
 
@@ -37,13 +39,19 @@ pub fn parse(text: &str) -> Result<Config> {
     Ok(cfg)
 }
 
-/// Sanity-check a parsed config (port range, non-empty password).
+/// Sanity-check a parsed config (port range, non-empty password, sane limits).
 fn validate(cfg: &Config) -> Result<()> {
     if cfg.server.port == 0 {
         anyhow::bail!("server.port must be > 0");
     }
     if cfg.server.password.is_empty() {
         anyhow::bail!("server.password must not be empty");
+    }
+    if cfg.limits.max_players == 0 {
+        anyhow::bail!("limits.max_players must be > 0");
+    }
+    if cfg.limits.max_queue == 0 {
+        anyhow::bail!("limits.max_queue must be > 0");
     }
     Ok(())
 }
@@ -73,6 +81,20 @@ password = "secret"
 host = "0.0.0.0"
 port = 0
 password = "x"
+"#;
+        assert!(parse(toml).is_err());
+    }
+
+    #[test]
+    fn rejects_zero_max_players() {
+        let toml = r#"
+[server]
+host = "0.0.0.0"
+port = 1
+password = "x"
+[limits]
+max_players = 0
+max_queue = 100
 "#;
         assert!(parse(toml).is_err());
     }

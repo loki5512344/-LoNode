@@ -35,18 +35,18 @@ lonode/
 
 ## Phase 2 — Player + API
 
-- [ ] Player Manager
-  - [ ] Структура `Guild` (voice state, queue, current track)
-  - [ ] Команды: play, stop, pause, resume, skip, seek, volume
-  - [ ] Очередь треков
-- [ ] axum WebSocket
-  - [ ] Lavalink v4 протокол (events: TrackStart, TrackEnd, TrackException)
-  - [ ] Аутентификация по паролю (header `Authorization`)
-- [ ] axum REST
-  - [ ] `GET /v4/info`
-  - [ ] `GET /v4/stats`
+- [x] Player Manager
+  - [x] Структура `Guild` (voice state, queue, current track)
+  - [x] Команды: play, stop, pause, resume, skip, seek, volume
+  - [x] Очередь треков
+- [x] axum WebSocket
+  - [x] Lavalink v4 протокол (events: TrackStart, TrackEnd, TrackException)
+  - [x] Аутентификация по паролю (header `Authorization`)
+- [x] axum REST
+  - [x] `GET /v4/info`
+  - [x] `GET /v4/stats`
   - [ ] `PATCH /v4/sessions/{sessionId}`
-  - [ ] `GET/POST/PATCH/DELETE /v4/sessions/{sessionId}/players/{guildId}`
+  - [x] `GET/POST/PATCH/DELETE /v4/sessions/{sessionId}/players/{guildId}`
 
 ## Phase 3 — Источники
 

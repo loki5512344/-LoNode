@@ -23,6 +23,9 @@ tracing = "0.1"
 anyhow = "1"
 xsalsa20poly1305 = { version = "0.9", features = ["std"] }
 opus = "0.3"
+axum = { version = "0.7", features = ["ws"] }
+hyper = "1"
 
 [dev-dependencies]
 pretty_assertions = "1"
+tower = { version = "0.5", features = ["util"] }

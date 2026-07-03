@@ -1,22 +1,16 @@
 //! LoNode binary entry point.
 //!
-//! Phase 1 behaviour:
 //! - Loads `config.toml` (or falls back to defaults).
-//! - Reads voice credentials from environment variables
-//!   (`VOICE_ENDPOINT`, `VOICE_GUILD_ID`, `VOICE_USER_ID`,
-//!   `VOICE_SESSION_ID`, `VOICE_TOKEN`).
-//! - If all five are present, runs a single voice session via
-//!   [`lonode_core::runner::run_voice_session`].
-//! - Otherwise, prints usage and exits cleanly.
-//!
-//! Phase 2 will add an axum HTTP/WS server that supplies these credentials
-//! dynamically per guild.
-
-use lonode_core::config;
-use lonode_core::gateway::VoiceConfig;
-use lonode_core::runner;
+//! - Starts the axum HTTP/WS API server (Lavalink v4 compatible).
+//! - Optionally also starts one voice session from env vars (dev/test mode).
+//! - In production the API server drives voice sessions per guild.
 
 use anyhow::Result;
+use lonode_core::api;
+use lonode_core::config;
+use lonode_core::gateway::VoiceConfig;
+use lonode_core::player::PlayerManager;
+use lonode_core::runner;
 
 const ENV_ENDPOINT: &str = "VOICE_ENDPOINT";
 const ENV_GUILD: &str = "VOICE_GUILD_ID";
@@ -28,29 +22,42 @@ const ENV_TOKEN: &str = "VOICE_TOKEN";
 async fn main() -> Result<()> {
     init_tracing();
     let cfg = config::load("config.toml")?;
-    tracing::info!(host = %cfg.server.host, port = cfg.server.port, "lonode starting (phase 1)");
+    tracing::info!(host = %cfg.server.host, port = cfg.server.port, "lonode starting");
 
-    let Some(voice) = read_voice_env() else {
-        eprintln!("Voice credentials not set in environment.");
-        eprintln!("Required: {ENV_ENDPOINT}, {ENV_GUILD}, {ENV_USER}, {ENV_SESSION}, {ENV_TOKEN}");
-        eprintln!("Phase 2 will add an HTTP/WS server that supplies these per guild.");
-        return Ok(());
+    let players = PlayerManager::new(cfg.limits.clone());
+
+    // Optional dev-mode voice session from env vars.
+    let voice_task = if let Some(voice) = read_voice_env() {
+        let players = players.clone();
+        Some(tokio::spawn(async move {
+            // Register the dev guild player so the API can see it.
+            let _ = players.get_or_create(&voice.guild_id).await;
+            if let Err(e) = runner::run_voice_session(voice).await {
+                tracing::error!(error = %e, "dev voice session ended");
+            }
+        }))
+    } else {
+        tracing::info!("no voice env vars set; running as API-only node");
+        None
     };
 
     tokio::select! {
-        res = runner::run_voice_session(voice) => {
+        res = api::serve(&cfg, players) => {
             if let Err(e) = res {
-                tracing::error!(error = %e, "voice session ended with error");
+                tracing::error!(error = %e, "api server ended");
             }
         }
         _ = tokio::signal::ctrl_c() => {
             tracing::info!("ctrl-c received, shutting down");
         }
     }
+
+    if let Some(t) = voice_task {
+        t.abort();
+    }
     Ok(())
 }
 
-/// Initialize `tracing_subscriber` with `RUST_LOG` env filter, defaulting to `info`.
 fn init_tracing() {
     use tracing_subscriber::EnvFilter;
     let filter =
@@ -58,7 +65,6 @@ fn init_tracing() {
     tracing_subscriber::fmt().with_env_filter(filter).init();
 }
 
-/// Read the five required voice env vars. Returns `None` if any is missing.
 fn read_voice_env() -> Option<VoiceConfig> {
     Some(VoiceConfig {
         endpoint: std::env::var(ENV_ENDPOINT).ok()?,

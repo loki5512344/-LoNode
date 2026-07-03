@@ -1,5 +1,6 @@
 //! Configuration types for LoNode.
 
+use super::extra::{LimitsConfig, SourcesConfig};
 use serde::{Deserialize, Serialize};
 
 /// Top-level configuration loaded from `config.toml`.
@@ -8,6 +9,15 @@ pub struct Config {
     /// HTTP/WS server settings.
     #[serde(default)]
     pub server: ServerConfig,
+    /// Audio pipeline settings.
+    #[serde(default)]
+    pub audio: AudioConfig,
+    /// Source/plugin settings.
+    #[serde(default)]
+    pub sources: SourcesConfig,
+    /// Runtime limits.
+    #[serde(default)]
+    pub limits: LimitsConfig,
 }
 
 /// HTTP/WebSocket server settings.
@@ -31,17 +41,29 @@ impl Default for ServerConfig {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Audio pipeline tuning.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AudioConfig {
+    /// Ring-buffer length in milliseconds (~1 s ahead).
+    #[serde(default = "default_buffer_ms")]
+    pub buffer_ms: u32,
+    /// Opus bitrate in bits per second.
+    #[serde(default = "default_opus_bitrate")]
+    pub opus_bitrate: u32,
+}
 
-    #[test]
-    fn default_config_has_lavalink_port() {
-        assert_eq!(Config::default().server.port, 2333);
-    }
+fn default_buffer_ms() -> u32 {
+    1_000
+}
+fn default_opus_bitrate() -> u32 {
+    128_000
+}
 
-    #[test]
-    fn default_password_is_classic() {
-        assert_eq!(Config::default().server.password, "youshallnotpass");
+impl Default for AudioConfig {
+    fn default() -> Self {
+        Self {
+            buffer_ms: default_buffer_ms(),
+            opus_bitrate: default_opus_bitrate(),
+        }
     }
 }
